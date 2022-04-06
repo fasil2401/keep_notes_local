@@ -6,6 +6,10 @@ import 'package:google_keep/Components/SideMenuBar.dart';
 import 'package:google_keep/Providers/Colors.dart';
 import 'package:google_keep/Screens/create_note.dart';
 import 'package:google_keep/Screens/note_view.dart';
+import 'package:google_keep/Screens/search_page.dart';
+import 'package:google_keep/Services/db.dart';
+import 'package:google_keep/Services/firestore_db.dart';
+import 'package:google_keep/model/model.dart';
 
 class ArchiveView extends StatefulWidget {
   const ArchiveView({Key? key}) : super(key: key);
@@ -15,6 +19,9 @@ class ArchiveView extends StatefulWidget {
 }
 
 class _ArchiveViewState extends State<ArchiveView> {
+
+  bool isLoading = true;
+   List<KeepNote> notesList = [];
   GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
   IconData viewType = Icons.grid_view;
   String searchText = '';
@@ -23,6 +30,19 @@ class _ArchiveViewState extends State<ArchiveView> {
   String note1 =
       'Lorem ipsum dolor sit amet, consectetur adipiscing elitamet, consectetur adipiscing elit. Fusce molestie lor.';
 
+ Future<String?> getAllNotes() async {
+     FireDB().getAllStoredNotes();
+    this.notesList = await KeepNotesDatabase.instance.readAllArchiveNotes();
+    setState(() {
+      isLoading = false;
+    });
+  }
+  @override
+  void initState() {
+    // TODO: implement initState
+    getAllNotes();
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,16 +76,16 @@ class _ArchiveViewState extends State<ArchiveView> {
                 width: MediaQuery.of(context).size.width,
                 height: 40.h,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Builder(
                       builder: (BuildContext context) {
                         return IconButton(
                           onPressed: () {
-                            _drawerKey.currentState!.openDrawer();
+                           Navigator.pop(context);
                           },
                           icon: const Icon(
-                            Icons.menu,
+                            Icons.arrow_back_sharp,
                             color: Colors.grey,
                           ),
                           splashRadius: .01,
@@ -75,39 +95,45 @@ class _ArchiveViewState extends State<ArchiveView> {
                     SizedBox(
                       width: 6.w,
                     ),
-                    Container(
-                      width: 180.w,
-                      child: Text(
-                        'Search our Notes',
-                        style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          if (viewType == Icons.grid_view) {
-                            viewType = Icons.view_list_rounded;
-                          } else {
-                            viewType = Icons.grid_view;
-                          }
-                        });
-                      },
-                      icon: Icon(
-                        viewType,
-                        color: Colors.grey,
-                      ),
-                      splashRadius: .01,
-                    ),
-                    SizedBox(
-                      width: 10.w,
-                    ),
-                    CircleAvatar(
-                      radius: 15.w,
-                      backgroundColor: Colors.white,
-                    )
+                     GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => SearchView()));
+                            },
+                            child: Container(
+                              width: 180.w,
+                              child: Text(
+                                'Search our Notes',
+                                style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w400),
+                              ),
+                            ),
+                          ),
+                    // IconButton(
+                    //   onPressed: () {
+                    //     setState(() {
+                    //       if (viewType == Icons.grid_view) {
+                    //         viewType = Icons.view_list_rounded;
+                    //       } else {
+                    //         viewType = Icons.grid_view;
+                    //       }
+                    //     });
+                    //   },
+                    //   icon: Icon(
+                    //     viewType,
+                    //     color: Colors.grey,
+                    //   ),
+                    //   splashRadius: .01,
+                    // ),
+                    // SizedBox(
+                    //   width: 10.w,
+                    // ),
+                    // CircleAvatar(
+                    //   radius: 15.w,
+                    //   backgroundColor: Colors.white,
+                    // )
                   ],
                 ),
               ),
@@ -135,7 +161,7 @@ class _ArchiveViewState extends State<ArchiveView> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
-                "ALL",
+                "Archived",
                 style: TextStyle(
                   color: white.withOpacity(0.5),
                   fontSize: 13,
@@ -154,7 +180,7 @@ class _ArchiveViewState extends State<ArchiveView> {
           child: StaggeredGridView.countBuilder(
             physics:const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemCount: 10,
+            itemCount:  notesList.length,
             mainAxisSpacing: 10.h,
             crossAxisSpacing: 10.w,
             crossAxisCount: 4,
@@ -162,6 +188,10 @@ class _ArchiveViewState extends State<ArchiveView> {
             itemBuilder: (context, index) =>
              InkWell(
                onTap: (){
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => NoteView(
+                          note: notesList[index],
+                        )));
                 //  Navigator
                 //  .of(context).push(MaterialPageRoute(builder: (context)=>NoteView()));
                },
@@ -175,8 +205,8 @@ class _ArchiveViewState extends State<ArchiveView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                   const Text(
-                      "HEADING",
+                    Text(
+                      notesList[index].title,
                       style: TextStyle(
                           color: white,
                           fontSize: 20,
@@ -186,12 +216,10 @@ class _ArchiveViewState extends State<ArchiveView> {
                       height: 10,
                     ),
                     Text(
-                      index.isEven
-                          ? note.length > 250
-                              ? "${note.substring(0, 250)}..."
-                              : note
-                          : note1,
-                      style:const TextStyle(
+                      notesList[index].content.length > 250
+                          ? "${notesList[index].content.substring(0, 250)}..."
+                          : notesList[index].content,
+                      style: const TextStyle(
                         color: white,
                         fontSize: 16,
                       ),
@@ -216,7 +244,7 @@ class _ArchiveViewState extends State<ArchiveView> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
-                "ALL",
+                "Archived",
                 style: TextStyle(
                   color: white.withOpacity(0.5),
                   fontSize: 13,
@@ -236,39 +264,47 @@ class _ArchiveViewState extends State<ArchiveView> {
 
             physics: NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemCount: 10,
-            itemBuilder: (context, index) => Container(
-              margin: EdgeInsets.only(bottom: 10.h),
-              padding: EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                  color: index.isEven ? Colors.green : Colors.amber,
-                  border: Border.all(color: white.withOpacity(0.4)),
-                  borderRadius: BorderRadius.circular(7)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                 const Text(
-                    "HEADING",
-                    style: TextStyle(
-                        color: white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  ),
-                 const SizedBox(
-                    height: 10,
-                  ),
-                  Text(
-                    index.isEven
-                        ? note.length > 250
-                            ? "${note.substring(0, 250)}..."
-                            : note
-                        : note1,
-                    style:const TextStyle(
-                      color: white,
-                      fontSize: 16,
+            itemCount: notesList.length,
+            itemBuilder: (context, index) => InkWell(
+              onTap: (){
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => NoteView(
+                          note: notesList[index],
+                        )));
+                //  Navigator
+                //  .of(context).push(MaterialPageRoute(builder: (context)=>NoteView()));
+               },
+              child: Container(
+                margin: EdgeInsets.only(bottom: 10.h),
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                    color: index.isEven ? Colors.green : Colors.amber,
+                    border: Border.all(color: white.withOpacity(0.4)),
+                    borderRadius: BorderRadius.circular(7)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      notesList[index].title,
+                      style: TextStyle(
+                          color: white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
                     ),
-                  )
-                ],
+                   const SizedBox(
+                      height: 10,
+                    ),
+                     Text(
+                        notesList[index].content.length > 250
+                            ? "${notesList[index].content.substring(0, 250)}..."
+                            : notesList[index].content,
+                        style: const TextStyle(
+                          color: white,
+                          fontSize: 16,
+                        ),
+                      )
+                  ],
+                ),
               ),
             ),
           ),

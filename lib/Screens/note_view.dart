@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_keep/Components/custom_widgets.dart';
 import 'package:google_keep/Providers/colors.dart';
 import 'package:google_keep/Screens/edit_note.dart';
 import 'package:google_keep/Screens/homepage.dart';
 import 'package:google_keep/Services/db.dart';
 import 'package:google_keep/model/model.dart';
+import 'package:intl/intl.dart';
 
 class NoteView extends StatefulWidget {
   KeepNote note;
@@ -47,17 +49,38 @@ class _NoteViewState extends State<NoteView> {
           IconButton(
               onPressed: () async {
                 await KeepNotesDatabase.instance.archNote(widget.note);
-                Navigator.pushReplacement(
-                    context, MaterialPageRoute(builder: (context) => HomePage()));
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => HomePage()));
               },
               icon: Icon(widget.note.isArchieve
                   ? Icons.archive
                   : Icons.archive_outlined)),
           IconButton(
             onPressed: () async {
-              await KeepNotesDatabase.instance.deleteNote(widget.note);
-              Navigator.pushReplacement(
-                  context, MaterialPageRoute(builder: (context) => HomePage()));
+              showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                        content: CustomText(textData: 'Delete?', textSize: 16),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: CustomText(textData: 'No', textSize: 16),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              await KeepNotesDatabase.instance
+                                  .deleteNote(widget.note);
+                              Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => HomePage()));
+                            },
+                            child: CustomText(textData: 'Yes', textSize: 16),
+                          ),
+                        ],
+                      ));
             },
             splashRadius: 20.w,
             icon: Icon(Icons.delete_outlined),
@@ -75,11 +98,23 @@ class _NoteViewState extends State<NoteView> {
         ],
       ),
       body: SingleChildScrollView(
+        physics: BouncingScrollPhysics(),
         child: Container(
           padding: EdgeInsets.all(15.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Created On ${DateFormat('dd-MM-yyyy - kk:mm').format(widget.note.createdTime)}',
+                style: TextStyle(
+                  color: white,
+                  fontSize: 16,
+                  // fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(
+                height: 10.h,
+              ),
               Text(
                 widget.note.title,
                 style: TextStyle(

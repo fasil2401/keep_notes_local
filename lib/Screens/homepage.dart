@@ -3,12 +3,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_keep/Components/SideMenuBar.dart';
+import 'package:google_keep/Components/custom_widgets.dart';
 import 'package:google_keep/Providers/colors.dart';
 import 'package:google_keep/Screens/create_note.dart';
 import 'package:google_keep/Screens/note_view.dart';
 import 'package:google_keep/Screens/search_page.dart';
 import 'package:google_keep/Services/db.dart';
+import 'package:google_keep/Services/firestore_db.dart';
 import 'package:google_keep/model/model.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -18,10 +21,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   bool isLoading = true;
-
-   List<KeepNote> notesList =[];
+  DateFormat dateFormatter = DateFormat('yyyy-mm-dd h:mm a');
+  DateFormat dateFormat = DateFormat('dd MMM yyyy');
+  List<KeepNote> notesList = [];
 
   GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
   IconData viewType = Icons.grid_view;
@@ -41,12 +44,12 @@ class _HomePageState extends State<HomePage> {
 
   Future createEntry(KeepNote note) async {
     await KeepNotesDatabase.instance.InsertEntry(note);
-   
   }
 
   Future<String?> getAllNotes() async {
+    FireDB().getAllStoredNotes();
     this.notesList = await KeepNotesDatabase.instance.readAllNotes();
-   setState(() {
+    setState(() {
       isLoading = false;
     });
   }
@@ -61,114 +64,125 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoading ? Scaffold(backgroundColor: bgColor, body: Center(child: CircularProgressIndicator(color: Colors.white,),),) : Scaffold(
-      key: _drawerKey,
-      endDrawerEnableOpenDragGesture: true,
-      drawer: SideMenu(),
-      backgroundColor: bgColor,
-      floatingActionButton: FloatingActionButton(
-          backgroundColor: black,
-          onPressed: () {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => CreateNoteView()));
-          },
-          child: Icon(
-            Icons.add,
-            size: 40.w,
-          )),
-      body: NestedScrollView(
-        floatHeaderSlivers: true,
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              backgroundColor: bgColor,
-              floating: true,
-              snap: true,
-              toolbarHeight: 50.h,
-              automaticallyImplyLeading: false,
-              elevation: 0,
-              title: Container(
-                decoration: BoxDecoration(
-                    color: black,
-                    borderRadius: const BorderRadius.all(Radius.circular(22))),
-                width: MediaQuery.of(context).size.width,
-                height: 40.h,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Builder(
-                      builder: (BuildContext context) {
-                        return IconButton(
-                          onPressed: () {
-                            _drawerKey.currentState!.openDrawer();
-                          },
-                          icon: const Icon(
-                            Icons.menu,
-                            color: Colors.grey,
+    return isLoading
+        ? Scaffold(
+            backgroundColor: bgColor,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            ),
+          )
+        : Scaffold(
+            key: _drawerKey,
+            endDrawerEnableOpenDragGesture: true,
+            drawer: SideMenu(),
+            backgroundColor: bgColor,
+            floatingActionButton: FloatingActionButton(
+                backgroundColor: black,
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => CreateNoteView()));
+                },
+                child: Icon(
+                  Icons.add,
+                  size: 40.w,
+                )),
+            body: NestedScrollView(
+              floatHeaderSlivers: true,
+              headerSliverBuilder:
+                  (BuildContext context, bool innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    backgroundColor: bgColor,
+                    floating: true,
+                    snap: true,
+                    toolbarHeight: 50.h,
+                    automaticallyImplyLeading: false,
+                    elevation: 0,
+                    title: Container(
+                      decoration: BoxDecoration(
+                          color: black,
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(22))),
+                      width: MediaQuery.of(context).size.width,
+                      height: 40.h,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Builder(
+                            builder: (BuildContext context) {
+                              return IconButton(
+                                onPressed: () {
+                                  _drawerKey.currentState!.openDrawer();
+                                },
+                                icon: const Icon(
+                                  Icons.menu,
+                                  color: Colors.grey,
+                                ),
+                                splashRadius: .01,
+                              );
+                            },
                           ),
-                          splashRadius: .01,
-                        );
-                      },
-                    ),
-                    SizedBox(
-                      width: 6.w,
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => SearchView()));
-                      },
-                      child: Container(
-                        width: 180.w,
-                        child: Text(
-                          'Search our Notes',
-                          style: TextStyle(
+                          SizedBox(
+                            width: 6.w,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => SearchView()));
+                            },
+                            child: Container(
+                              width: 180.w,
+                              child: Text(
+                                'Search our Notes',
+                                style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w400),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                if (viewType == Icons.grid_view) {
+                                  viewType = Icons.view_list_rounded;
+                                } else {
+                                  viewType = Icons.grid_view;
+                                }
+                              });
+                            },
+                            icon: Icon(
+                              viewType,
                               color: Colors.grey,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w400),
-                        ),
+                            ),
+                            splashRadius: .01,
+                          ),
+                          SizedBox(
+                            width: 10.w,
+                          ),
+                          CircleAvatar(
+                            radius: 15.w,
+                            backgroundColor: Colors.white,
+                          )
+                        ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          if (viewType == Icons.grid_view) {
-                            viewType = Icons.view_list_rounded;
-                          } else {
-                            viewType = Icons.grid_view;
-                          }
-                        });
-                      },
-                      icon: Icon(
-                        viewType,
-                        color: Colors.grey,
-                      ),
-                      splashRadius: .01,
-                    ),
-                    SizedBox(
-                      width: 10.w,
-                    ),
-                    CircleAvatar(
-                      radius: 15.w,
-                      backgroundColor: Colors.white,
-                    )
+                  ),
+                ];
+              },
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    viewType == Icons.grid_view
+                        ? noteSectionAll()
+                        : noteSectionList(),
                   ],
                 ),
               ),
             ),
-          ];
-        },
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              viewType == Icons.grid_view
-                  ? noteSectionAll()
-                  : noteSectionList(),
-            ],
-          ),
-        ),
-      ),
-    );
+          );
   }
 
   Widget noteSectionAll() {
@@ -206,8 +220,10 @@ class _HomePageState extends State<HomePage> {
             staggeredTileBuilder: (index) => const StaggeredTile.fit(2),
             itemBuilder: (context, index) => InkWell(
               onTap: () {
-                Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (context) => NoteView(note: notesList[index],)));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => NoteView(
+                          note: notesList[index],
+                        )));
               },
               child: Container(
                 padding: const EdgeInsets.all(10),
@@ -218,12 +234,24 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      notesList[index].title,
-                      style: const TextStyle(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        
+                        Text(
+                          notesList[index].title,
+                          style: const TextStyle(
+                              color: white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        Visibility(
+                          visible: notesList[index].pin,
+                          child: Icon(Icons.push_pin,
+                          size: 15,
                           color: white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold),
+                          ))
+                      ],
                     ),
                     const SizedBox(
                       height: 10,
@@ -236,7 +264,26 @@ class _HomePageState extends State<HomePage> {
                         color: white,
                         fontSize: 16,
                       ),
-                    )
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: 5,
+                            ),
+                            CustomText(
+                              textWeight: FontWeight.bold,
+                                textData:
+                                    dateFormat.format(notesList[index].createdTime),
+                                textSize: 11.5),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -278,10 +325,11 @@ class _HomePageState extends State<HomePage> {
             itemCount: notesList.length,
             itemBuilder: (context, index) => InkWell(
               onTap: () {
-                Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (context) => NoteView(note: notesList[index],)));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => NoteView(
+                          note: notesList[index],
+                        )));
               },
-
               child: Container(
                 margin: EdgeInsets.only(bottom: 10.h),
                 padding: EdgeInsets.all(10),
@@ -292,8 +340,8 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "HEADING",
+                    Text(
+                      notesList[index].title,
                       style: TextStyle(
                           color: white,
                           fontSize: 20,
@@ -304,13 +352,32 @@ class _HomePageState extends State<HomePage> {
                     ),
                     Text(
                       notesList[index].content.length > 250
-                            ? "${notesList[index].content.substring(0, 250)}..."
-                            : notesList[index].content,
+                          ? "${notesList[index].content.substring(0, 250)}..."
+                          : notesList[index].content,
                       style: const TextStyle(
                         color: white,
                         fontSize: 16,
                       ),
-                    )
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: 5,
+                            ),
+                            CustomText(
+                              textWeight: FontWeight.bold,
+                                textData:
+                                    dateFormat.format(notesList[index].createdTime),
+                                textSize: 11.5),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

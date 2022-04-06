@@ -5,6 +5,7 @@ import 'package:google_keep/Screens/homepage.dart';
 import 'package:google_keep/Screens/note_view.dart';
 import 'package:google_keep/Services/db.dart';
 import 'package:google_keep/model/model.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class EditNoteView extends StatefulWidget {
   KeepNote note;
@@ -17,7 +18,8 @@ class EditNoteView extends StatefulWidget {
 class _EditNoteViewState extends State<EditNoteView> {
   String newTitle = '';
   String newNote = '';
-
+  Color currentColor = Colors.amber;
+  void changeColor(Color color) => setState(() => currentColor = color);
   @override
   void initState() {
     // TODO: implement initState
@@ -34,16 +36,31 @@ class _EditNoteViewState extends State<EditNoteView> {
         backgroundColor: bgColor,
         elevation: 0.0,
         actions: [
+          InkWell(
+            onTap: () {
+              showDialog(
+                  context: context,
+                  builder: (context) => Container(
+                        child: BlockPicker(
+                            pickerColor: currentColor,
+                            onColorChanged: changeColor),
+                      ));
+            },
+            child: CircleAvatar(
+              radius: 15,
+            ),
+          ),
           IconButton(
             onPressed: () async {
               KeepNote LatestNote = KeepNote(
-                  pin: widget.note.pin,
-                  title: newTitle,
-                  content: newNote,
-                  createdTime: widget.note.createdTime,
-                  id: widget.note.id, 
-                  isArchieve: widget.note.isArchieve,
-                  );
+                pin: widget.note.pin,
+                title: newTitle,
+                content: newNote,
+                createdTime: widget.note.createdTime,
+                id: widget.note.id,
+                isArchieve: widget.note.isArchieve,
+                
+              );
               await KeepNotesDatabase.instance.updateNote(LatestNote);
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(

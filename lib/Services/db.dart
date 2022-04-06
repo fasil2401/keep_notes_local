@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:google_keep/Services/firestore_db.dart';
 import 'package:google_keep/model/model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -33,21 +34,36 @@ class KeepNotesDatabase {
       ${NotesImpNames.title} $textType,
       ${NotesImpNames.content} $textType,
       ${NotesImpNames.createdTime} $textType
+    
     )
     ''');
   }
 
   Future<KeepNote?> InsertEntry(KeepNote note) async {
+    
     final db = await instance.database;
     final id = await db!.insert(NotesImpNames.TableName, note.toJson());
+    await FireDB().createNewNoteFirestore(note, id.toString());
     return note.copy(id: id);
   }
 
   Future<List<KeepNote>> readAllNotes() async {
+    
     final db = await instance.database;
     final orderBy = '${NotesImpNames.createdTime} ASC';
+    FireDB().getAllStoredNotes();
     final query_result =
         await db!.query(NotesImpNames.TableName, orderBy: orderBy);
+    return query_result.map((json) => KeepNote.fromJson(json)).toList();
+  }
+
+ Future<List<KeepNote>> readAllArchiveNotes() async {
+    
+    final db = await instance.database;
+    final orderBy = '${NotesImpNames.createdTime} ASC';
+    FireDB().getAllStoredNotes();
+    final query_result =
+        await db!.query(NotesImpNames.TableName, orderBy: orderBy, where: '${NotesImpNames.isArchieve} = 1');
     return query_result.map((json) => KeepNote.fromJson(json)).toList();
   }
 
@@ -65,6 +81,7 @@ class KeepNotesDatabase {
   }
 
   Future updateNote(KeepNote note) async {
+    await FireDB().updateNoteFirestore(note);
     final db = await instance.database;
 
     await db!.update(NotesImpNames.TableName, note.toJson(),
@@ -81,12 +98,13 @@ Future archNote(KeepNote? note) async{
 
  await db!.update(NotesImpNames.TableName, {NotesImpNames.isArchieve  : !note!.isArchieve  ? 1 : 0}, where:  '${NotesImpNames.id} = ?' ,whereArgs: [note.id] );
 }
-  Future deleteNote(KeepNote note) async {
-    final db = await instance.database;
-
-    await db!.delete(NotesImpNames.TableName,
-        where: '${NotesImpNames.id} = ?', whereArgs: [note.id]);
-  }
+Future deleteNote(KeepNote note) async {
+  await FireDB().deleteNoteFirestore(note);
+  final db = await instance.database;
+  
+  await db!.delete(NotesImpNames.TableName,
+      where: '${NotesImpNames.id} = ?', whereArgs: [note.id]);
+}
 
   Future closeDB() async {
     final db = await instance.database;

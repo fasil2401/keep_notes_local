@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class NotesImpNames {
   static final String id = "id";
   static final String pin = "pin";
@@ -6,7 +8,8 @@ class NotesImpNames {
   static final String isArchieve = "isArchieve";
   static final String createdTime = "createdTime";
   static final String TableName = "Notes";
-  static final List<String> values = [id, isArchieve, pin, title, content, createdTime];
+  static final String tileColor = "tileColor";
+  static final List<String> values = [id, isArchieve, pin, title, content, createdTime,tileColor];
 }
 
 class KeepNote {
@@ -17,13 +20,16 @@ class KeepNote {
   final String content;
   final DateTime createdTime;
 
+
   KeepNote(
+     
       {this.id,
       required this.pin,
       required this.isArchieve,
       required this.title,
       required this.content,
-      required this.createdTime});
+      required this.createdTime,
+      });
 
   KeepNote copy({
     int? id,
@@ -32,6 +38,7 @@ class KeepNote {
     String? title,
     String? content,
     DateTime? createdTime,
+    
   }) {
     return KeepNote(
         id: id ?? this.id,
@@ -39,7 +46,8 @@ class KeepNote {
         isArchieve: isArchieve ?? this.isArchieve,
         title: title ?? this.title,
         content: content ?? this.content,
-        createdTime: createdTime ?? this.createdTime);
+        createdTime: createdTime ?? this.createdTime, 
+       );
   }
 
   static KeepNote fromJson(Map<String, Object?> json) {
@@ -50,6 +58,7 @@ class KeepNote {
       title: json[NotesImpNames.title] as String,
       content: json[NotesImpNames.content] as String,
       createdTime: DateTime.parse(json[NotesImpNames.createdTime] as String),
+     
     );
   }
 
@@ -60,7 +69,9 @@ class KeepNote {
       NotesImpNames.isArchieve: isArchieve ? 1 : 0,
       NotesImpNames.title: title,
       NotesImpNames.content: content,
-      NotesImpNames.createdTime: createdTime.toIso8601String()
+      
+      NotesImpNames.createdTime: createdTime.toIso8601String(),
+     
     };
   }
 }
