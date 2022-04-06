@@ -33,8 +33,7 @@ getAllStoredNotes() async{
       docs.add(note);
       
       // print(note["Title"]);
-      // KeepNotesDatabase.instance.InsertEntry(KeepNote(pin: false, isArchieve: false, title: note["Title"], content: note["content"], createdTime: note["date"]));
-      // NotesDatabse.instance.InsertEntry(Note(title:note["Title"] , content : note["content"] , createdTime: note["date"] , pin: false, isArchieve: false));  //Add Notes In Database
+      KeepNotesDatabase.instance.InsertEntry(KeepNote(pin: false, isArchieve: false, title: note["Title"], content: note["content"], createdTime: note["date"]));
     });
   });
    
